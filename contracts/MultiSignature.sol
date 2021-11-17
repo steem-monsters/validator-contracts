@@ -75,6 +75,26 @@ contract MultiSignature {
       IERC20(tokenContract).transfer(to, amount);
       emit Transferred(to, amount, referenceString);
   }
+  
+    /**
+   * @notice Transfer tokens from this contract to another address, has to be approved with enough valid signatures
+   * @param signatures An array of signatures from validators
+   * @param to The address of the account receiving the tokens
+   * @param amount The amount of tokens to send
+   * @param tokenAddress Address of the token to transfer
+   * @param referenceString The reference string to identify transactions (e.g. hive transaction hash for cross-chain transfers)
+   */
+  function transferToken(bytes[] memory signatures, address to, uint256 amount, string memory referenceString, address tokenAddress) external {
+      require(!isAlreadyApproved[referenceString], 'Reference already used');
+
+      bytes32 hash = getEthereumMessageHash(keccak256(abi.encodePacked(to, amount, referenceString, tokenAddress, address(this))));
+
+      require(areSignaturesValid(signatures, hash), 'Signatures not valid/threshold not reached');
+      isAlreadyApproved[referenceString] = true;
+
+      IERC20(tokenAddress).transfer(to, amount);
+      emit Transferred(to, amount, referenceString);
+  }
 
   /**
    * @notice Add new validator
